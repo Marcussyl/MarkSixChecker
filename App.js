@@ -221,7 +221,7 @@ export default function App() {
       </View>
       
 
-      {checkResult.length>1 && (
+      {checkResult[0].length>1 && (
         <View style={styles.resultContainer}>
           <Text style={styles.resultTitle}>Result:</Text>
           {checkResult.map((result, index) => (
