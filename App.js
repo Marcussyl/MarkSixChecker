@@ -1,12 +1,49 @@
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, Button, Image, Alert } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
+//import { AsyncStorage } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Swiper from 'react-native-swiper';
 
 export default function App() {
   const [resultToCheck, setResultToCheck] = useState([]);
-  const [photoUri, setPhotoUri] = useState(null);
   const [myDraws, setMyDraws] = useState([]);
+  const [checkResult, setCheckResult] = useState([]);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  // Save data to AsyncStorage whenever resultToCheck or myDraws changes
+  useEffect(() => {
+    saveData();
+  }, [resultToCheck, myDraws]);
+
+  const loadData = async () => {
+    try {
+      const resultToCheckData = await AsyncStorage.getItem('resultToCheck');
+      const myDrawsData = await AsyncStorage.getItem('myDraws');
+
+      if (resultToCheckData !== null) {
+        setResultToCheck(JSON.parse(resultToCheckData));
+      }
+
+      if (myDrawsData !== null) {
+        setMyDraws(JSON.parse(myDrawsData));
+      }
+    } catch (error) {
+      console.log('Error loading data:', error);
+    }
+  };
+
+  const saveData = async () => {
+    try {
+      await AsyncStorage.setItem('resultToCheck', JSON.stringify(resultToCheck));
+      await AsyncStorage.setItem('myDraws', JSON.stringify(myDraws));
+    } catch (error) {
+      console.log('Error saving data:', error);
+    }
+  };
 
   const handleAddResult = () => {
     Alert.prompt(
@@ -29,7 +66,6 @@ export default function App() {
       '',
       'numeric'
     );
-    console.log(resultToCheck);
   };
 
   const handleRemoveResultButton = (index) => {
@@ -77,6 +113,7 @@ export default function App() {
         {
           text: 'OK',
           onPress: (text) => {
+            
             const numbers = text.split('.').map(Number);
             setMyDraws((prevResult) => [...prevResult, numbers]);
           },
@@ -93,7 +130,7 @@ export default function App() {
   };
 
   const handleEditMyDrawButton = (index) => {
-    const currentResult = resultToCheck[index].join('.');
+    const currentResult = myDraws[index].join('.');
 
     Alert.prompt(
       'Edit Numbers',
@@ -122,42 +159,37 @@ export default function App() {
   }
 
   const handleCheckButton = async () => {
-    const matchedResults = [];
-    resultToCheck.forEach((result) => {
-      const matchedDraws = myDraws.filter((draw) => {
-        return draw.every((digit) => result.includes(digit));
-      });
-      if (matchedDraws.length > 0) {
-        matchedResults.push({
-          result: result.join(' '),
-          matchedDraws: matchedDraws.map((draw) => draw.join(' ')),
-        });
+    setCheckResult([]);
+    myDraws.forEach((draw, index) => {
+      const matchedNumbers = draw.filter((number) => resultToCheck[0].includes(number));
+      console.log(matchedNumbers);
+      if(matchedNumbers.length >= 3) {
+        setCheckResult((prevCheckResult) => [...prevCheckResult, matchedNumbers]);
+      } else {
+        setCheckResult((prevCheckResult) => [...prevCheckResult, ['-','-','-']]);
       }
     });
+    console.log(checkResult);
+  };
 
-    if (matchedResults.length > 0) {
-      Alert.alert(
-        'Matched Results',
-        matchedResults.map((matchedResult) => {
-          return `${matchedResult.result} matches: ${matchedResult.matchedDraws.join(', ')}`;
-        }).join('\n')
-      );
-    } else {
-      Alert.alert('No Matches', 'No matches found.');
-    }
+  const handleClearButton = () => {
+    setResultToCheck([]);
+    setMyDraws([]);
+    setCheckResult([]);
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.logo}>MarkSixChecker</Text>
-
       <View style={styles.resultContainer}>
         <Text style={styles.resultTitle}>Result to Check:</Text>
         {resultToCheck.map((digits, index) => (
           <View key={index} style={styles.resultRow}>
             <Text style={styles.resultDigits}>{digits.join(' ')}</Text>
-            <Button title="Remove" onPress={() => handleRemoveResultButton(index)} />
-            <Button title="Edit" onPress={() => handleEditResultButton(index)} />
+            <View style={styles.resultRowButton}>
+              <Button title="Remove" onPress={() => handleRemoveResultButton(index)} />
+              <Button title="Edit" onPress={() => handleEditResultButton(index)} />
+            </View>
           </View>
         ))}
         <Button title="Add" onPress={handleAddResult} />
@@ -166,15 +198,32 @@ export default function App() {
         <Text style={styles.resultTitle}>My Draw:</Text>
         {myDraws && myDraws.map((draw, index) => (
           <View key={index} style={styles.resultRow}>
-            <Text style={styles.resultDigits}>{draw.join(' ')}</Text>
-            <Button title="Remove" onPress={() => handleRemoveMyDraw(index)} />
-            <Button title="Edit" onPress={() => handleEditMyDrawButton(index)} />
+              <Text style={styles.resultDigits}>{draw.join(' ')}</Text>
+            <View style={styles.resultRowButton}>
+              <Button title="Remove" onPress={() => handleRemoveMyDraw(index)} />
+              <Button title="Edit" onPress={() => handleEditMyDrawButton(index)} />
+            </View>
           </View>
         ))}
         <Button title="Add" onPress={handleAddMyDraw} />
       </View>
-      <Button title="Check" onPress={handleCheckButton} />
-      {photoUri && <Image source={{ uri: photoUri }} style={styles.photo} />}
+
+      <View style={styles.cButtons}>
+        <Button title="Check" onPress={handleCheckButton} />
+        <Button title="Clear" onPress={handleClearButton} />
+      </View>
+      
+
+      {checkResult.length>1 && (
+        <View style={styles.resultContainer}>
+          <Text style={styles.resultTitle}>Result:</Text>
+          {checkResult.map((result, index) => (
+            <View key={index} style={styles.resultRow}>
+              <Text style={styles.resultDigits}>{result.join(' ')}</Text>
+            </View>
+          ))}
+        </View>
+      )}
       <StatusBar style="auto" />
     </View>
   );
@@ -185,7 +234,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    marginTop: 50,
   },
   logo: {
     fontSize: 24,
@@ -196,29 +246,42 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   resultContainer: {
-    backgroundColor: '#ffd900',
+    width: '85%',
+    borderRadius: 10,
+    borderWidth: 2,
+    padding: 10,
+    mariginTop: 30,
+    marginLeft: 30,
+    marginRight: 30,
     marginBottom: 20,
   },
   resultTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
+    //textAlign: 'center',
   },
   resultRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    borderBottomColor: '#000',
+  },
+  resultRowButton: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  cButtons: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
   },
   resultDigits: {
     fontSize: 16,
     marginBottom: 5,
-  },
-  photo: {
-    width: 200,
-    height: 200,
-    marginBottom: 20,
   },
 });
 
