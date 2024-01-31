@@ -29,6 +29,7 @@ export default function App() {
       '',
       'numeric'
     );
+    console.log(resultToCheck);
   };
 
   const handleRemoveResultButton = (index) => {
