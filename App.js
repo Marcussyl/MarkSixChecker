@@ -209,7 +209,7 @@ export default function App() {
             </View>
           </View>
         ))}
-        <View style={styles.cButtons}>
+        <View style={styles.buttonRow}>
           <Button title="Add" onPress={handleAddMyDraw} />
           <Button title="Take photo" onPress={handleTakePhotoButton} />
         </View>
@@ -284,6 +284,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 10,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   resultDigits: {
     fontSize: 16,
