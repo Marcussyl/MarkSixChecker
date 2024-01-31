@@ -6,63 +6,172 @@ import * as ImagePicker from 'expo-image-picker';
 export default function App() {
   const [resultToCheck, setResultToCheck] = useState([]);
   const [photoUri, setPhotoUri] = useState(null);
+  const [myDraws, setMyDraws] = useState([]);
 
-  const handleAddButton = () => {
-    Alert.prompt('Add Digits', 'Enter numbers separated by whitespace:', (text) => {
-      const digits = text.split(' ').map(Number);
-      setResultToCheck((prevResult) => [...prevResult, digits]);
-    });
+  const handleAddResult = () => {
+    Alert.prompt(
+      'Add Numbers',
+      'Enter numbers separated by a period:',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'OK',
+          onPress: (text) => {
+            const numbers = text.split('.').map(Number);
+            setResultToCheck((prevResult) => [...prevResult, numbers]);
+          },
+        },
+      ],
+      'plain-text',
+      '',
+      'numeric'
+    );
   };
+
+  const handleRemoveResultButton = (index) => {
+    setResultToCheck((prevResult) => prevResult.filter((_, i) => i !== index));
+  };
+
+  const handleEditResultButton = (index) => {
+    const currentResult = resultToCheck[index].join('.');
+
+    Alert.prompt(
+      'Edit Numbers',
+      'Enter numbers separated by a period:',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'OK',
+          onPress: (text) => {
+            const numbers = text.split('.').map(Number);
+            setResultToCheck((prevResult) => {
+              const newResult = [...prevResult];
+              newResult[index] = numbers;
+              return newResult;
+            });
+          },
+        },
+      ],
+      'plain-text',
+      currentResult,
+      'numeric'
+    );
+  }
+
+  const handleAddMyDraw = () => {
+    Alert.prompt(
+      'Add Digits',
+      'Enter numbers separated by whitespace:',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'OK',
+          onPress: (text) => {
+            const numbers = text.split('.').map(Number);
+            setMyDraws((prevResult) => [...prevResult, numbers]);
+          },
+        },
+      ],
+      'plain-text',
+      '',
+      'numeric'
+    );
+  };
+
+  const handleRemoveMyDraw = (index) => {
+    setMyDraws((prevDraws) => prevDraws.filter((_, i) => i!== index));
+  };
+
+  const handleEditMyDrawButton = (index) => {
+    const currentResult = resultToCheck[index].join('.');
+
+    Alert.prompt(
+      'Edit Numbers',
+      'Enter numbers separated by a period:',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'OK',
+          onPress: (text) => {
+            const numbers = text.split('.').map(Number);
+            setMyDraws((prevResult) => {
+              const newResult = [...prevResult];
+              newResult[index] = numbers;
+              return newResult;
+            });
+          },
+        },
+      ],
+      'plain-text',
+      currentResult,
+      'numeric'
+    );
+  }
 
   const handleCheckButton = async () => {
-    // Request permission to access the camera roll
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      alert('Permission to access camera roll is required!');
-      return;
-    }
-
-    // Launch the image picker
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
+    const matchedResults = [];
+    resultToCheck.forEach((result) => {
+      const matchedDraws = myDraws.filter((draw) => {
+        return draw.every((digit) => result.includes(digit));
+      });
+      if (matchedDraws.length > 0) {
+        matchedResults.push({
+          result: result.join(' '),
+          matchedDraws: matchedDraws.map((draw) => draw.join(' ')),
+        });
+      }
     });
 
-    console.log(result);
-
-    if (!result.cancelled) {
-      // Photo is selected or taken
-      const photoUri = result.uri;
-      setPhotoUri(photoUri);
-      console.log(photoUri);
-
-      // Implement digit extraction logic here
-      // Extract digits from the photo and store them in a variable
-
-
-      // Compare extracted digits with resultToCheck and highlight matching digits
+    if (matchedResults.length > 0) {
+      Alert.alert(
+        'Matched Results',
+        matchedResults.map((matchedResult) => {
+          return `${matchedResult.result} matches: ${matchedResult.matchedDraws.join(', ')}`;
+        }).join('\n')
+      );
+    } else {
+      Alert.alert('No Matches', 'No matches found.');
     }
-  };
-
-  const handleRemoveButton = (index) => {
-    setResultToCheck((prevResult) => prevResult.filter((_, i) => i !== index));
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.logo}>MarkSixChecker</Text>
+
       <View style={styles.resultContainer}>
         <Text style={styles.resultTitle}>Result to Check:</Text>
         {resultToCheck.map((digits, index) => (
           <View key={index} style={styles.resultRow}>
             <Text style={styles.resultDigits}>{digits.join(' ')}</Text>
-            <Button title="Remove" onPress={() => handleRemoveButton(index)} />
+            <Button title="Remove" onPress={() => handleRemoveResultButton(index)} />
+            <Button title="Edit" onPress={() => handleEditResultButton(index)} />
           </View>
         ))}
+        <Button title="Add" onPress={handleAddResult} />
       </View>
-      <Button title="Add" onPress={handleAddButton} />
+      <View style={styles.resultContainer}>
+        <Text style={styles.resultTitle}>My Draw:</Text>
+        {myDraws && myDraws.map((draw, index) => (
+          <View key={index} style={styles.resultRow}>
+            <Text style={styles.resultDigits}>{draw.join(' ')}</Text>
+            <Button title="Remove" onPress={() => handleRemoveMyDraw(index)} />
+            <Button title="Edit" onPress={() => handleEditMyDrawButton(index)} />
+          </View>
+        ))}
+        <Button title="Add" onPress={handleAddMyDraw} />
+      </View>
       <Button title="Check" onPress={handleCheckButton} />
       {photoUri && <Image source={{ uri: photoUri }} style={styles.photo} />}
       <StatusBar style="auto" />
