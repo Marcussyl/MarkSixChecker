@@ -178,9 +178,12 @@ export default function App() {
     setCheckResult([]);
   };
 
+  const handleTakePhotoButton = async () => {};
+
   return (
     <View style={styles.container}>
       <Text style={styles.logo}>MarkSixChecker</Text>
+
       <View style={styles.resultContainer}>
         <Text style={styles.resultTitle}>Result to Check:</Text>
         {resultToCheck.map((digits, index) => (
@@ -194,6 +197,7 @@ export default function App() {
         ))}
         <Button title="Add" onPress={handleAddResult} />
       </View>
+
       <View style={styles.resultContainer}>
         <Text style={styles.resultTitle}>My Draw:</Text>
         {myDraws && myDraws.map((draw, index) => (
@@ -205,7 +209,10 @@ export default function App() {
             </View>
           </View>
         ))}
-        <Button title="Add" onPress={handleAddMyDraw} />
+        <View style={styles.cButtons}>
+          <Button title="Add" onPress={handleAddMyDraw} />
+          <Button title="Take photo" onPress={handleTakePhotoButton} />
+        </View>
       </View>
 
       <View style={styles.cButtons}>
@@ -259,7 +266,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
-    //textAlign: 'center',
   },
   resultRow: {
     flexDirection: 'row',
